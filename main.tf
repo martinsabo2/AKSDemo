@@ -33,7 +33,7 @@ resource "azurerm_subnet" "db" {
 }
 
 # Create the Azure Kubernetes Service (AKS) cluster
-resource "azurerm_kubernetes_cluster" "example" {
+resource "azurerm_kubernetes_cluster" "aks" {
   name                = "myAKSCluster"
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
@@ -58,4 +58,31 @@ resource "azurerm_kubernetes_cluster" "example" {
   tags = {
     environment = "dev"
   }
+}
+
+# Create an Azure SQL Server
+resource "azurerm_mssql_server" "sql-server" {
+  name                         = "demo-sql-server-ms12"
+  resource_group_name          = azurerm_resource_group.demo.name
+  location                     = azurerm_resource_group.demo.location
+  version                      = "12.0" # Choose your desired version
+  administrator_login          = var.db_username
+  administrator_login_password = var.db_password
+  minimum_tls_version          = "1.2"
+}
+
+# Create an Azure SQL Database
+resource "azurerm_mssql_database" "sql-db" {
+  name           = "demo-database"
+  server_id      = azurerm_mssql_server.sql-server.id
+  collation      = "SQL_Latin1_General_CP1_CI_AS"
+  license_type   = "LicenseIncluded"
+  sku_name       = "S0"
+  zone_redundant = false
+}
+
+resource "azurerm_mssql_virtual_network_rule" "vnet-rule" {
+  name      = "sql-vnet-rule"
+  server_id = azurerm_mssql_server.sql-server.id
+  subnet_id = azurerm_subnet.db.id
 }
