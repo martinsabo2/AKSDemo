@@ -30,6 +30,7 @@ resource "azurerm_subnet" "db" {
   resource_group_name  = azurerm_resource_group.demo.name
   virtual_network_name = azurerm_virtual_network.demo.name
   address_prefixes     = ["10.1.1.0/24"]  # Specify your desired subnet address range
+  service_endpoints = ["Microsoft.Sql"]
 }
 
 # Create the Azure Kubernetes Service (AKS) cluster
