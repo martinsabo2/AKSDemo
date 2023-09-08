@@ -87,3 +87,61 @@ resource "azurerm_mssql_virtual_network_rule" "vnet-rule" {
   server_id = azurerm_mssql_server.sql-server.id
   subnet_id = azurerm_subnet.db.id
 }
+
+resource "azurerm_network_security_group" "nsg-backend" {
+  name                = "backend-nsg"
+  location            = azurerm_resource_group.demo.location
+  resource_group_name = azurerm_resource_group.demo.name
+  
+  security_rule {
+    name                       = "DenyInternetAll"
+    priority                   = 1010
+    direction                  = "Outbound"
+    access                     = "Deny"
+    source_address_prefix      = "VirtualNetwork"
+    source_port_range          = "*"
+    destination_address_prefix = "Internet"
+    destination_port_range     = "*"
+    protocol                   = "*"
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg-backend" {
+  subnet_id                 = azurerm_subnet.backend.id
+  network_security_group_id = azurerm_network_security_group.nsg-backend.id
+}
+
+resource "azurerm_network_security_group" "nsg-db" {
+  name                = "db-nsg"
+  location            = azurerm_resource_group.demo.location
+  resource_group_name = azurerm_resource_group.demo.name
+
+  security_rule {
+    name                       = "AllowTagMSSQLOutbound"
+    priority                   = 1001
+    direction                  = "Outbound"
+    access                     = "Allow"
+    source_address_prefix      = "VirtualNetwork"
+    source_port_range          = "*"
+    destination_address_prefix = "Sql"
+    destination_port_range     = "1433"
+    protocol                   = "Tcp"   
+  }
+
+  security_rule {
+    name                       = "DenyInternetAll"
+    priority                   = 1010
+    direction                  = "Outbound"
+    access                     = "Deny"
+    source_address_prefix      = "VirtualNetwork"
+    source_port_range          = "*"
+    destination_address_prefix = "Internet"
+    destination_port_range     = "*"
+    protocol                   = "*"   
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg-db" {
+  subnet_id                 = azurerm_subnet.db.id
+  network_security_group_id = azurerm_network_security_group.nsg-db.id
+}
